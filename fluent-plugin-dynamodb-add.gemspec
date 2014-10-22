@@ -6,6 +6,8 @@ Gem::Specification.new do |spec|
   spec.name          = "fluent-plugin-dynamodb-add"
   spec.authors       = ["Masayuki DOI"]
   spec.email         = ["dotquasar@gmail.com"]
+  spec.version       = '0.1.0'
+  spec.licenses      = ['MIT']
   spec.description   = "Amazon DynamoDB atomic add plugin"
   spec.summary       = spec.description
   spec.homepage      = "https://github.com/mdoi/fluent-plugin-dynamodb-add"

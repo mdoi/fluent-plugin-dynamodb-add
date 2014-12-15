@@ -15,6 +15,7 @@ module Fluent
     config_param :endpoint, :string, :default => nil
     config_param :hash_key, :string, :default => nil
     config_param :hash_key_delimiter, :string, :default => ":"
+    config_param :add_hash_key_prefix, :string, :default => nil
     config_param :range_key, :string, :default => nil
 
     def initialize
@@ -68,6 +69,7 @@ module Fluent
     private
     def create_key(record)
       key_array = []
+      key_array << @add_hash_key_prefix if @add_hash_key_prefix
       @hash_key.each do |h|
         return nil unless record[h]
         key_array << record[h]

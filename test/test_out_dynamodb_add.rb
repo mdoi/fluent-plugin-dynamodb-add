@@ -80,5 +80,24 @@ class DynamodbAddTest < Test::Unit::TestCase
     assert_equal '3', d.instance.add_hash_key_prefix
     assert_equal nil, d.instance.range_key
   end
+
+  def test_configure_set_timestamp
+    conf = CONFIG.clone
+    conf << " set_timestamp last_updated_at"
+
+    d = create_driver(conf)
+    assert_equal 'test_count_key', d.instance.count_key
+    assert_equal 'test_dynamo_count_key', d.instance.dynamo_count_key
+    assert_equal 'test_table_name', d.instance.table_name
+    assert_equal false, d.instance.use_iam_role
+    assert_equal 'test_aws_key_id', d.instance.aws_key_id
+    assert_equal 'test_aws_sec_key', d.instance.aws_sec_key
+    assert_equal 'https://test_endpoint', d.instance.endpoint
+    assert_equal ['test_hash_key1','test_hash_key2'], d.instance.hash_key
+    assert_equal ':', d.instance.hash_key_delimiter
+    assert_equal '3', d.instance.add_hash_key_prefix
+    assert_equal 'test_range_key', d.instance.range_key
+    assert_equal 'last_updated_at', d.instance.set_timestamp
+  end
 end
 

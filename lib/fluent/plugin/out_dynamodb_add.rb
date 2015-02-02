@@ -52,6 +52,7 @@ module Fluent
     end
 
     def emit(tag, es, chain)
+      chain.next
       es.each do |time, record|
         hash_key = create_key(record)
         next unless hash_key || record[@count_key]

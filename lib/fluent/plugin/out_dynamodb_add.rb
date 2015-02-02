@@ -17,6 +17,7 @@ module Fluent
     config_param :hash_key_delimiter, :string, :default => ":"
     config_param :add_hash_key_prefix, :string, :default => nil
     config_param :range_key, :string, :default => nil
+    config_param :set_timestamp, :string, :default => nil
 
     def initialize
       super
@@ -63,7 +64,12 @@ module Fluent
         else
           item = @table.items[hash_key]
         end
-        item.attributes.update {|u| u.add @dynamo_count_key => record[@count_key] }
+        item.attributes.update {|u|
+          u.add @dynamo_count_key => record[@count_key]
+          if @set_timestamp
+            u.set @set_timestamp => Time.now.to_i
+          end
+        }
       end
     end
 

@@ -21,7 +21,7 @@ module Fluent
 
     def initialize
       super
-      require 'aws-sdk'
+      require 'aws-sdk-v1'
     end
 
     def configure(conf)

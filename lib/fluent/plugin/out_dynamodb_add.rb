@@ -1,3 +1,5 @@
+require 'aws-sdk-dynamodb'
+
 module Fluent
   class DynamodbAdd < Fluent::Output
     Fluent::Plugin.register_output('dynamodb_add', self)
@@ -12,6 +14,7 @@ module Fluent
     config_param :use_iam_role, :bool, :default => false
     config_param :aws_key_id, :string, :default => nil
     config_param :aws_sec_key, :string, :default => nil
+    config_param :region, :string, :default => nil
     config_param :endpoint, :string, :default => nil
     config_param :hash_key, :string, :default => nil
     config_param :hash_key_delimiter, :string, :default => ":"
@@ -21,7 +24,6 @@ module Fluent
 
     def initialize
       super
-      require 'aws-sdk-v1'
     end
 
     def configure(conf)
@@ -39,17 +41,24 @@ module Fluent
 
     def start
       super
-      if use_iam_role
-        AWS.config(:credential_provider => AWS::Core::CredentialProviders::EC2Provider.new)
-      else
-        AWS.config(:access_key_id => @aws_key_id, :secret_access_key => @aws_sec_key)
+
+      options = {}
+
+      unless use_iam_role
+        options[:access_key_id] = @aws_key_id
+        options[:secret_access_key] = @aws_sec_key
       end
 
-      AWS.config(:dynamo_db_endpoint => @endpoint) if @endpoint
+      options[:region] = region
+      options[:endpoint] = endpoint
 
-      @dynamo_db = AWS::DynamoDB.new
-      @table = @dynamo_db.tables[table_name]
-      @table.load_schema
+      client = Aws::DynamoDB::Client.new(options)
+
+      resource = Aws::DynamoDB::Resource.new(client: client)
+      @table = resource.table(table_name)
+
+      @dynamo_hash_key = @table.key_schema.find{|e| e.key_type == "HASH" }.attribute_name
+      @dynamo_range_key = @table.key_schema.find{|e| e.key_type == "RANGE" }&.attribute_name
     end
 
     def emit(tag, es, chain)
@@ -58,22 +67,27 @@ module Fluent
         hash_key = create_key(record)
         next unless hash_key || record[@count_key]
 
+        key = { @dynamo_hash_key => hash_key }
+
         if @range_key
           next unless record[@range_key]
-          item = @table.items[hash_key, record[@range_key]]
-        else
-          item = @table.items[hash_key]
+          key[@dynamo_range_key] = record[@range_key]
         end
-        item.attributes.update {|u|
-          u.add @dynamo_count_key => record[@count_key]
-          if @set_timestamp
-            u.set @set_timestamp => Time.now.to_i
-          end
-        }
+
+        @table.update_item({
+          key: key,
+          attribute_updates: {
+            @dynamo_count_key => {
+              value: record[@count_key],
+              action: "ADD"
+            },
+          },
+        })
       end
     end
 
     private
+
     def create_key(record)
       key_array = []
       key_array << @add_hash_key_prefix if @add_hash_key_prefix

@@ -1,0 +1,28 @@
+version: 2.1
+
+orbs:
+  ruby-orbs: sue445/ruby-orbs@volatile
+
+jobs:
+  test:
+    docker:
+      - image: cimg/ruby:3.0
+        environment:
+          AWS_REGION: ap-northeast-1
+          AWS_ACCESS_KEY_ID: dummy
+          AWS_SECRET_ACCESS_KEY: dummy
+      - image: amazon/dynamodb-local
+        environment:
+          AWS_REGION: ap-northeast-1
+    steps:
+      - checkout
+      - ruby-orbs/bundle-install:
+          gemspec_name: fluent-plugin-dynamodb-add
+          with_gemfile_lock: false
+
+      - run: bundle exec rake test
+
+workflows:
+  test:
+    jobs:
+      - test
